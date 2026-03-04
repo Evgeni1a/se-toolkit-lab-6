@@ -29,6 +29,7 @@
   - [4.22. Separate-commits constraint](#422-separate-commits-constraint)
   - [4.23. Autochecker step at task end](#423-autochecker-step-at-task-end)
   - [4.24. AI curation annotation format](#424-ai-curation-annotation-format)
+  - [4.25. Multi-part tasks](#425-multi-part-tasks)
 - [5. Conceptual review dimensions](#5-conceptual-review-dimensions)
   - [5.1. D1. Learning objective clarity](#51-d1-learning-objective-clarity)
   - [5.2. D2. Step-by-step completeness](#52-d2-step-by-step-completeness)
@@ -541,6 +542,33 @@ Key rules:
 - Require at least one `DISCARDED` item as evidence the student critically evaluated the output rather than accepted everything blindly.
 - Use `test:` as the commit type when committing AI-curated tests (see [Commit message format](#2-commit-message-format)).
 - Pair with [Controlled task environment](#420-controlled-task-environment): provide an exact prompt or a template with `<placeholders>` so the AI interaction is reproducible.
+
+### 4.25. Multi-part tasks
+
+When a task covers 2 or more distinct phases that differ in environment, tooling, or learning objective, split the steps into named parts.
+
+- Use `### N.M. Part X: <descriptive title>` for each part heading, where X is a letter (A, B, C, ...).
+- Place `<!-- no toc -->` on the line immediately after the `###` heading, then add the part's mini-ToC (a bullet list of links to the part's sub-sections). This suppresses automatic ToC generation for the inline list and marks it as a manual mini-ToC.
+- Reflect each part in the document-level `<h4>Table of contents</h4>` with its `Part X: <title>` prefix as a top-level entry, with its sub-sections indented below.
+- Use parts only when the phases genuinely differ — for example, different environments (local vs. VM), different tooling (unit tests vs. end-to-end tests vs. AI agent), or different learning objectives. Don't split a single coherent workflow into parts just to add structure.
+
+Example (document-level ToC entry and part heading):
+
+```markdown
+  - [1.3. Part A: Run unit tests locally](#13-part-a-run-unit-tests-locally)
+    - [1.3.1. Create the environment file](#131-create-the-environment-file)
+    - [1.3.2. Run all unit tests](#132-run-all-unit-tests)
+  - [1.4. Part B: Run end-to-end tests remotely](#14-part-b-run-end-to-end-tests-remotely)
+```
+
+```markdown
+### 1.3. Part A: Run unit tests locally
+
+<!-- no toc -->
+
+- [1.3.1. Create the environment file](#131-create-the-environment-file)
+- [1.3.2. Run all unit tests](#132-run-all-unit-tests)
+```
 
 ---
 
