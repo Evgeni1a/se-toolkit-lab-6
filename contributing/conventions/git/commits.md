@@ -50,6 +50,7 @@ area of change:
 - `lab` — `lab/` (task sheets, setup guide)
 - `frontend` — `frontend/`
 - `backend` — `backend/`, `pyproject.toml`, backend config
+- `tests` — `tests/` (test files and fixtures)
 - `vscode` — `.vscode/` settings and extensions
 - `git` — `.gitignore`, `.gitmodules`, git config
 - `github` — `.github/` (workflows, issue templates, PR templates)
