@@ -99,3 +99,80 @@ def test_agent_list_wiki_files():
     assert any(call["args"].get("path") == "wiki" for call in list_files_calls), (
         "Expected list_files to be called with path='wiki'"
     )
+
+
+def test_agent_framework_question():
+    """Test that agent uses query_api or read_file for system framework question"""
+
+    result = subprocess.run(
+        [sys.executable, "agent.py", "What Python web framework does the backend use?"],
+        capture_output=True,
+        text=True,
+        cwd=root_dir,
+    )
+
+    assert result.returncode == 0, f"Agent failed with error: {result.stderr}"
+
+    try:
+        output = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        assert False, f"Output is not valid JSON: {result.stdout}"
+
+    # Check required fields
+    assert "answer" in output, "Missing 'answer' field"
+    assert "source" in output, "Missing 'source' field"
+    assert "tool_calls" in output, "Missing 'tool_calls' field"
+
+    # Check that either query_api or read_file was used
+    tool_calls = output["tool_calls"]
+    assert len(tool_calls) > 0, "Expected at least one tool call"
+
+    tool_names = [call["tool"] for call in tool_calls]
+    # Agent can use query_api to check the system or read_file to check source code
+    assert "query_api" in tool_names or "read_file" in tool_names, (
+        "Expected query_api or read_file to be called for system question"
+    )
+
+    # Check that answer mentions FastAPI or similar framework
+    answer = output["answer"].lower()
+    assert "fastapi" in answer or "flask" in answer or "django" in answer or "framework" in answer, (
+        f"Expected answer to mention framework, got: {output['answer']}"
+    )
+
+
+def test_agent_item_count_question():
+    """Test that agent uses query_api for data-dependent item count question"""
+
+    result = subprocess.run(
+        [sys.executable, "agent.py", "How many items are in the database?"],
+        capture_output=True,
+        text=True,
+        cwd=root_dir,
+    )
+
+    assert result.returncode == 0, f"Agent failed with error: {result.stderr}"
+
+    try:
+        output = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        assert False, f"Output is not valid JSON: {result.stdout}"
+
+    # Check required fields
+    assert "answer" in output, "Missing 'answer' field"
+    assert "tool_calls" in output, "Missing 'tool_calls' field"
+
+    # Check that query_api was used for data-dependent question
+    tool_calls = output["tool_calls"]
+    assert len(tool_calls) > 0, "Expected at least one tool call"
+
+    tool_names = [call["tool"] for call in tool_calls]
+    assert "query_api" in tool_names, (
+        "Expected query_api to be called for data-dependent question"
+    )
+
+    # Check that query_api was called with GET /items/
+    query_api_calls = [call for call in tool_calls if call["tool"] == "query_api"]
+    assert any(
+        call["args"].get("method") == "GET" and "/items" in call["args"].get("path", "")
+        for call in query_api_calls
+    ), "Expected query_api to be called with GET /items/"
