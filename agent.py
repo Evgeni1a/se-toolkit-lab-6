@@ -66,21 +66,23 @@ def read_file(path: str) -> str:
     except Exception as e:
         return f"Error reading file: {str(e)}"
 
-def query_api(method: str, path: str, body: str = None) -> str:
+def query_api(method: str, path: str, body: str = None, use_auth: bool = True) -> str:
     """Call the backend API."""
     try:
         url = f"{AGENT_API_BASE_URL}{path}"
         headers = {
-            "Authorization": f"Bearer {LMS_API_KEY}",
             "Content-Type": "application/json"
         }
+        
+        if use_auth:
+            headers["Authorization"] = f"Bearer {LMS_API_KEY}"
         
         method = method.upper()
         if method == "GET":
             response = requests.get(url, headers=headers)
         elif method == "POST":
             data = json.loads(body) if body else {}
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data)        
         else:
             return json.dumps({"status_code": 400, "body": f"Unsupported method: {method}"})
         
@@ -96,7 +98,6 @@ def query_api(method: str, path: str, body: str = None) -> str:
         return json.dumps(result)
     except Exception as e:
         return json.dumps({"status_code": 500, "body": str(e)})
-
 # Tool schemas for function calling
 TOOLS = [
     {
@@ -137,7 +138,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "query_api",
-            "description": "Call the backend API. Use this to get real system data like item counts, scores, or analytics. For data-dependent questions, use this tool.",
+            "description": "Call the backend API. Use this to get real system data like item counts, scores, or analytics.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -153,6 +154,10 @@ TOOLS = [
                     "body": {
                         "type": "string",
                         "description": "Optional JSON request body for POST requests"
+                    },
+                    "use_auth": {
+                        "type": "boolean",
+                        "description": "Whether to include authentication header (default: True). Set to False for testing unauthorized access."
                     }
                 },
                 "required": ["method", "path"]
@@ -171,7 +176,8 @@ def execute_tool(tool_name, tool_args):
         return query_api(
             tool_args["method"],
             tool_args["path"],
-            tool_args.get("body")
+            tool_args.get("body"),
+            tool_args.get("use_auth", True)
         )
     else:
         return f"Error: Unknown tool '{tool_name}'"
@@ -189,10 +195,14 @@ def agent_loop(question):
                 "For questions about the system (framework, ports, status codes), read the source code.\n"
                 "For questions about data (item counts, scores), use query_api.\n"
                 "For wiki questions, read the wiki files.\n\n"
+                "For questions about HTTP status codes or API behavior, you MUST use the query_api tool to check the actual API response. Do not rely on source code alone.\n\n"
+                "For questions about HTTP status codes without authentication (like checking /items/ without a key), you MUST call query_api with use_auth=False.\n\n"  
                 "Always include the source of your answer:\n"
+                "For questions about why an endpoint crashes, first query it to see the error, then read the relevant source file to find the bug. Do not query multiple labs - just one is enough to see the error."
                 "- For wiki/code: file path with section if possible\n"
                 "- For API: the endpoint used\n\n"
                 "After using tools, analyze the results and decide if you need more information or can provide the final answer."
+                "For questions about endpoint crashes, first read the source code to understand what the endpoint does and what inputs it expects. Then make a single API call with a lab that should cause the error. Do not make multiple API calls."
             )
         },
         {"role": "user", "content": question}
