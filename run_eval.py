@@ -147,12 +147,12 @@ def _match(text: str, rule: dict) -> bool:
         return bool(re.search(rule["regex"], text, re.IGNORECASE))
 
     if "numeric_gt" in rule:
-        numbers = re.findall(r"[\d.]+", text)
+        numbers = re.findall(r"\d+(?:\.\d+)?", text)
         return any(float(n) > rule["numeric_gt"] for n in numbers if n)
 
     if "numeric_range" in rule:
         lo, hi = rule["numeric_range"]
-        numbers = re.findall(r"[\d.]+", text)
+        numbers = re.findall(r"\d+(?:\.\d+)?", text)
         return any(lo <= float(n) <= hi for n in numbers if n)
 
     return False
